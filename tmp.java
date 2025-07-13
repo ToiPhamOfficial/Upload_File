@@ -2,13 +2,19 @@ package com.tpo.tmusic;
 
 
 
+import android.Manifest;
+
 import android.animation.*;
+
+import android.animation.ObjectAnimator;
 
 import android.app.*;
 
 import android.content.*;
 
 import android.content.Intent;
+
+import android.content.pm.PackageManager;
 
 import android.content.res.*;
 
@@ -20,8 +26,6 @@ import android.graphics.drawable.*;
 
 import android.media.*;
 
-import android.media.MediaPlayer;
-
 import android.net.*;
 
 import android.net.Uri;
@@ -29,6 +33,10 @@ import android.net.Uri;
 import android.os.*;
 
 import android.text.*;
+
+import android.text.Editable;
+
+import android.text.TextWatcher;
 
 import android.text.style.*;
 
@@ -42,9 +50,21 @@ import android.view.View.*;
 
 import android.view.animation.*;
 
+import android.view.animation.AccelerateDecelerateInterpolator;
+
+import android.view.animation.AccelerateInterpolator;
+
+import android.view.animation.BounceInterpolator;
+
+import android.view.animation.DecelerateInterpolator;
+
+import android.view.animation.LinearInterpolator;
+
 import android.webkit.*;
 
 import android.widget.*;
+
+import android.widget.EditText;
 
 import android.widget.ImageView;
 
@@ -57,6 +77,10 @@ import android.widget.TextView;
 import androidx.annotation.*;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import androidx.core.app.ActivityCompat;
+
+import androidx.core.content.ContextCompat;
 
 import androidx.fragment.app.DialogFragment;
 
@@ -92,6 +116,8 @@ import java.io.*;
 
 import java.text.*;
 
+import java.text.DecimalFormat;
+
 import java.util.*;
 
 import java.util.ArrayList;
@@ -101,6 +127,11 @@ import java.util.HashMap;
 import java.util.regex.*;
 
 import org.json.*;
+
+import android.graphics.Rect;
+
+import android.view.ViewTreeObserver;
+
 
 
 
@@ -121,6 +152,79 @@ public class HomeActivity extends AppCompatActivity {
 			    }
 	};
 
+	private boolean keyboardWasOpen = false;
+	
+	private void listenKeyboardClosedOnly() {
+					    final View rootView = getWindow().getDecorView().getRootView();
+					    rootView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+									        @Override
+									        public void onGlobalLayout() {
+													            Rect r = new Rect();
+													            rootView.getWindowVisibleDisplayFrame(r);
+													            int screenHeight = rootView.getHeight();
+													            int keypadHeight = screenHeight - r.bottom;
+													
+													            boolean isKeyboardNowOpen = keypadHeight > screenHeight * 0.15;
+													
+													            // Khi bàn phím vừa được đóng
+													            if (keyboardWasOpen && !isKeyboardNowOpen) {
+																	                if (linear8.getVisibility() == View.VISIBLE) {
+											                                                    if(getSupportFragmentManager().findFragmentByTag("SEARCH_FRAGMENT") == null) {
+													                                                        container.setVisibility(View.GONE);
+
+							linear8.setVisibility(View.GONE);
+
+							tablayout1.setVisibility(View.VISIBLE);
+
+							linear1.setVisibility(View.VISIBLE);
+
+							edittext1.setText("");
+													                                                    }
+
+															                                }
+																	    }
+													
+													            // Cập nhật trạng thái
+													            keyboardWasOpen = isKeyboardNowOpen;
+													        }
+									    });
+	}
+
+	public void slideDown(View view) {
+				    view.setVisibility(View.VISIBLE);
+				    view.setTranslationY(-view.getHeight());
+				
+				    view.animate()
+				        .translationY(0f)
+				        .setDuration(2500)
+				        .setListener(null)
+				        .start();
+	}
+
+	public void slideUp(final View view) {
+		    TranslateAnimation animate = new TranslateAnimation(
+		        0, 0,
+		        0, -view.getHeight()
+		    );
+		    animate.setDuration(300);
+		    animate.setFillAfter(false);
+		    view.startAnimation(animate);
+		
+		    // Sau animation, ẩn view luôn
+		    animate.setAnimationListener(new Animation.AnimationListener() {
+			        @Override
+			        public void onAnimationStart(Animation animation) { }
+			
+			        @Override
+			        public void onAnimationEnd(Animation animation) {
+				            view.setVisibility(View.GONE);
+				        }
+			
+			        @Override
+			        public void onAnimationRepeat(Animation animation) { }
+			    });
+	}
+
 		
 
 		private boolean isPlaying = false;
@@ -139,27 +243,23 @@ public class HomeActivity extends AppCompatActivity {
 
 		private boolean isRandom = false;
 
+		private double height = 0;
+
 		
 
 		private ArrayList<HashMap<String, Object>> dataList = new ArrayList<>();
 
 		
 
-		private LinearLayout linear1;
+		private RelativeLayout relativelayout3;
 
-		private TabLayout tablayout1;
-
-		private ViewPager viewpager1;
+		private RelativeLayout relativelayout1;
 
 		private LinearLayout miniControl;
 
-		private TextView textview1;
+		private ViewPager viewpager1;
 
-		private LinearLayout linear2;
-
-		private ImageView search_song;
-
-		private ImageView settings_and_more;
+		private LinearLayout container;
 
 		private ProgressBar progressbar;
 
@@ -177,6 +277,32 @@ public class HomeActivity extends AppCompatActivity {
 
 		private TextView textview3;
 
+		private LinearLayout linear_tooltab_and_tablayout;
+
+		private LinearLayout linear8;
+
+		private LinearLayout linear9;
+
+		private TextView textview4;
+
+		private ImageView imageview7;
+
+		private EditText edittext1;
+
+		private CircleImageView circleimageview3;
+
+		private LinearLayout linear1;
+
+		private TabLayout tablayout1;
+
+		private TextView textview1;
+
+		private LinearLayout linear2;
+
+		private ImageView search_song;
+
+		private ImageView settings_and_more;
+
 		
 
 		private FragFragmentAdapter frag;
@@ -185,11 +311,11 @@ public class HomeActivity extends AppCompatActivity {
 
 		private RequestNetwork.RequestListener _rq_request_listener;
 
-		private MediaPlayer mp;
-
 		private Intent it = new Intent();
 
 		private Intent i = new Intent();
+
+		private ObjectAnimator test = new ObjectAnimator();
 
 		
 
@@ -203,7 +329,35 @@ public class HomeActivity extends AppCompatActivity {
 
 				initialize(_savedInstanceState);
 
-				initializeLogic();
+				
+
+				if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED
+
+				|| ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
+
+						ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1000);
+
+				} else {
+
+						initializeLogic();
+
+				}
+
+		}
+
+		
+
+		@Override
+
+		public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+
+				super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+				if (requestCode == 1000) {
+
+						initializeLogic();
+
+				}
 
 		}
 
@@ -211,21 +365,15 @@ public class HomeActivity extends AppCompatActivity {
 
 		private void initialize(Bundle _savedInstanceState) {
 
-				linear1 = findViewById(R.id.linear1);
+				relativelayout3 = findViewById(R.id.relativelayout3);
 
-				tablayout1 = findViewById(R.id.tablayout1);
-
-				viewpager1 = findViewById(R.id.viewpager1);
+				relativelayout1 = findViewById(R.id.relativelayout1);
 
 				miniControl = findViewById(R.id.miniControl);
 
-				textview1 = findViewById(R.id.textview1);
+				viewpager1 = findViewById(R.id.viewpager1);
 
-				linear2 = findViewById(R.id.linear2);
-
-				search_song = findViewById(R.id.search_song);
-
-				settings_and_more = findViewById(R.id.settings_and_more);
+				container = findViewById(R.id.container);
 
 				progressbar = findViewById(R.id.progressbar);
 
@@ -243,6 +391,32 @@ public class HomeActivity extends AppCompatActivity {
 
 				textview3 = findViewById(R.id.textview3);
 
+				linear_tooltab_and_tablayout = findViewById(R.id.linear_tooltab_and_tablayout);
+
+				linear8 = findViewById(R.id.linear8);
+
+				linear9 = findViewById(R.id.linear9);
+
+				textview4 = findViewById(R.id.textview4);
+
+				imageview7 = findViewById(R.id.imageview7);
+
+				edittext1 = findViewById(R.id.edittext1);
+
+				circleimageview3 = findViewById(R.id.circleimageview3);
+
+				linear1 = findViewById(R.id.linear1);
+
+				tablayout1 = findViewById(R.id.tablayout1);
+
+				textview1 = findViewById(R.id.textview1);
+
+				linear2 = findViewById(R.id.linear2);
+
+				search_song = findViewById(R.id.search_song);
+
+				settings_and_more = findViewById(R.id.settings_and_more);
+
 				frag = new FragFragmentAdapter(getApplicationContext(), getSupportFragmentManager());
 
 				rq = new RequestNetwork(this);
@@ -258,6 +432,41 @@ public class HomeActivity extends AppCompatActivity {
 								it.setClass(getApplicationContext(), ControlActivity.class);
 
 								startActivity(it);
+
+						}
+
+				});
+
+				
+
+				container.setOnClickListener(new View.OnClickListener() {
+
+						@Override
+
+						public void onClick(View _view) {
+
+								Fragment existingFragment = getSupportFragmentManager()
+								    .findFragmentByTag("SEARCH_FRAGMENT");
+								
+								if (existingFragment == null) {
+
+										textview4.performClick();
+
+								}
+
+						}
+
+				});
+
+				
+
+				circleimageview1.setOnClickListener(new View.OnClickListener() {
+
+						@Override
+
+						public void onClick(View _view) {
+
+								height = linear8.getHeight();
 
 						}
 
@@ -300,6 +509,198 @@ public class HomeActivity extends AppCompatActivity {
 										imageview4.setImageResource(R.drawable.ic_mt_pause);
 
 								}
+
+						}
+
+				});
+
+				
+
+				textview4.setOnClickListener(new View.OnClickListener() {
+
+						@Override
+
+						public void onClick(View _view) {
+
+								Fragment existingFragment = getSupportFragmentManager()
+								    .findFragmentByTag("SEARCH_FRAGMENT");
+								
+								if (existingFragment != null) {
+														    getSupportFragmentManager()
+														        .beginTransaction()
+														        .remove(existingFragment)
+														        .commit();
+														    container.setAlpha(0.5f); // Khôi phục trạng thái container
+														    container.setBackgroundColor(0xFF424242);
+								}
+
+								test.setTarget(linear8);
+
+								test.setPropertyName("translationY");
+
+								test.setFloatValues((float)(0), (float)(0 - linear8.getHeight()));
+
+								test.setDuration((int)(300));
+
+								test.start();
+
+								edittext1.setText("");
+
+								SketchwareUtil.hideKeyboard(getApplicationContext());
+
+								tablayout1.setVisibility(View.VISIBLE);
+
+								container.setVisibility(View.GONE);
+
+						}
+
+				});
+
+				
+
+				edittext1.addTextChangedListener(new TextWatcher() {
+
+						@Override
+
+						public void onTextChanged(CharSequence _param1, int _param2, int _param3, int _param4) {
+
+								final String _charSeq = _param1.toString();
+
+								/*TestFragmentActivity fragment = new TestFragmentActivity();
+
+if (_charSeq.length() == 0) {
+
+container.setAlpha((float)(0.5d));
+
+container.setBackgroundColor(0xFF424242);
+
+getSupportFragmentManager()
+    .beginTransaction()
+    .remove(fragment) // Dùng lại biến fragment luôn
+    .commit();
+
+} else {
+
+container.setAlpha((float)(1));
+
+container.setBackgroundColor(0xFFFFFFFF);
+
+Bundle args = new Bundle();
+
+if (_charSeq.equals("daubuoi")) {
+
+args.putString("gg", "daubuoi");
+
+} else {
+
+args.putString("gg", "lonmup");
+
+}
+
+fragment.setArguments(args);
+getSupportFragmentManager()
+    .beginTransaction()
+    .replace(R.id.container, fragment)
+    .commit();
+
+}
+
+*/
+
+								TestFragmentActivity fragment = new TestFragmentActivity(); // Luôn tạo mới
+								
+								if (_charSeq.length() == 0) {
+											    container.setAlpha(0.5f);
+											    container.setBackgroundColor(0xFF424242);
+											    
+											    // Xóa Fragment nếu đang hiển thị
+											    Fragment oldFragment = getSupportFragmentManager().findFragmentByTag("SEARCH_FRAGMENT");
+											    if (oldFragment != null) {
+														        getSupportFragmentManager()
+														            .beginTransaction()
+														            .remove(oldFragment)
+														            .commit();
+														    }
+								} else {
+											    container.setAlpha(1.0f);
+											    container.setBackgroundColor(0xFFFFFFFF);
+											    
+											    Bundle args = new Bundle();
+											    args.putString("gg", _charSeq.equals("daubuoi") ? "daubuoi" : "lonmup");
+											    fragment.setArguments(args); // Đặt arguments trước khi hiển thị
+											    
+											    // Sử dụng replace() để đảm bảo Fragment cũ bị xóa
+											    getSupportFragmentManager()
+											        .beginTransaction()
+											        .replace(R.id.container, fragment, "SEARCH_FRAGMENT")
+											        .commit();
+								}
+
+						}
+
+						
+
+						@Override
+
+						public void beforeTextChanged(CharSequence _param1, int _param2, int _param3, int _param4) {
+
+								
+
+						}
+
+						
+
+						@Override
+
+						public void afterTextChanged(Editable _param1) {
+
+								
+
+						}
+
+				});
+
+				
+
+				circleimageview3.setOnClickListener(new View.OnClickListener() {
+
+						@Override
+
+						public void onClick(View _view) {
+
+								edittext1.setText("");
+
+						}
+
+				});
+
+				
+
+				search_song.setOnClickListener(new View.OnClickListener() {
+
+						@Override
+
+						public void onClick(View _view) {
+
+								tablayout1.setVisibility(View.GONE);
+
+								test.setTarget(linear8);
+
+								test.setPropertyName("translationY");
+
+								test.setFloatValues((float)(0 - linear8.getHeight()), (float)(0));
+
+								test.setDuration((int)(300));
+
+								linear8.setVisibility(View.VISIBLE);
+
+								test.start();
+
+								edittext1.requestFocus();
+
+								SketchwareUtil.showKeyboard(getApplicationContext());
+
+								container.setVisibility(View.VISIBLE);
 
 						}
 
@@ -360,6 +761,14 @@ public class HomeActivity extends AppCompatActivity {
 		
 
 		private void initializeLogic() {
+
+				FileUtil.writeFile("/sdcard/db.txt", String.valueOf(linear8.getHeight()).concat(String.valueOf(linear_tooltab_and_tablayout.getHeight())));
+
+				edittext1.setTypeface(Typeface.createFromAsset(getAssets(),"fonts/fz_poppins_regular.ttf"), 0);
+
+				textview4.setTypeface(Typeface.createFromAsset(getAssets(),"fonts/fz_poppins_regular.ttf"), 0);
+
+				linear9.setBackground(new GradientDrawable() { public GradientDrawable getIns(int a, int b) { this.setCornerRadius(a); this.setColor(b); return this; } }.getIns((int)10, 0xFFBDBDBD));
 
 				registerReceiver(progressReceiver, new IntentFilter("ACTION_UPDATE_PROGRESS"));
 
@@ -425,243 +834,4 @@ public class HomeActivity extends AppCompatActivity {
 				for (int i = 0; i < tabs.getChildCount(); i++) {
 							    View tab = tabs.getChildAt(i);
 							    if (tab instanceof ViewGroup) {
-										        ViewGroup vg = (ViewGroup) tab;
-										        for (int j = 0; j < vg.getChildCount(); j++) {
-													            View v = vg.getChildAt(j);
-													            if (v instanceof TextView) {
-																                ((TextView) v).setTypeface(tf, Typeface.NORMAL);
-																                ((TextView) v).setTextSize(14);
-																                ((TextView) v).setTextColor(Color.WHITE); // tuỳ chỉnh nếu cần
-																            }
-													        }
-										    }
-				}
-
-		}
-
-		
-
-		public class FragFragmentAdapter extends FragmentStatePagerAdapter {
-
-				// This class is deprecated, you should migrate to ViewPager2:
-
-				// https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2
-
-				Context context;
-
-				int tabCount;
-
-				
-
-				public FragFragmentAdapter(Context context, FragmentManager manager) {
-
-						super(manager);
-
-						this.context = context;
-
-				}
-
-				
-
-				public void setTabCount(int tabCount) {
-
-						this.tabCount = tabCount;
-
-				}
-
-				
-
-				@Override
-
-				public int getCount() {
-
-						return tabCount;
-
-				}
-
-				
-
-				@Override
-
-				public CharSequence getPageTitle(int _position) {
-
-						if (_position == 0) {
-
-								return "Bài hát";
-
-						}
-
-						if (_position == 1) {
-
-								return "Thể loại";
-
-						}
-
-						if (_position == 2) {
-
-								return "D.sách phát";
-
-						}
-
-						return "";
-
-				}
-
-				
-
-				@Override
-
-				public Fragment getItem(int _position) {
-
-						if (_position == 0) {
-
-								return new SongsFragmentActivity();
-
-						}
-
-						if (_position == 1) {
-
-								return new GenreFragmentActivity();
-
-						}
-
-						if (_position == 2) {
-
-								return new PlaylistFragmentActivity();
-
-						}
-
-						return new Fragment();
-
-				}
-
-		}
-
-		
-
-		@Override
-
-		public void onDestroy() {
-
-				super.onDestroy();
-
-				unregisterReceiver(progressReceiver);
-
-		}
-
-		public void _setCircleImage(final ImageView _img, final String _url) {
-
-				Glide.with(this)
-				        .load(_url)
-				        .circleCrop()
-				        .into(_img);
-
-				
-
-		}
-
-		
-
-		
-
-		@Deprecated
-
-		public void showMessage(String _s) {
-
-				Toast.makeText(getApplicationContext(), _s, Toast.LENGTH_SHORT).show();
-
-		}
-
-		
-
-		@Deprecated
-
-		public int getLocationX(View _v) {
-
-				int _location[] = new int[2];
-
-				_v.getLocationInWindow(_location);
-
-				return _location[0];
-
-		}
-
-		
-
-		@Deprecated
-
-		public int getLocationY(View _v) {
-
-				int _location[] = new int[2];
-
-				_v.getLocationInWindow(_location);
-
-				return _location[1];
-
-		}
-
-		
-
-		@Deprecated
-
-		public int getRandom(int _min, int _max) {
-
-				Random random = new Random();
-
-				return random.nextInt(_max - _min + 1) + _min;
-
-		}
-
-		
-
-		@Deprecated
-
-		public ArrayList<Double> getCheckedItemPositionsToArray(ListView _list) {
-
-				ArrayList<Double> _result = new ArrayList<Double>();
-
-				SparseBooleanArray _arr = _list.getCheckedItemPositions();
-
-				for (int _iIdx = 0; _iIdx < _arr.size(); _iIdx++) {
-
-						if (_arr.valueAt(_iIdx))
-
-						_result.add((double)_arr.keyAt(_iIdx));
-
-				}
-
-				return _result;
-
-		}
-
-		
-
-		@Deprecated
-
-		public float getDip(int _input) {
-
-				return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, _input, getResources().getDisplayMetrics());
-
-		}
-
-		
-
-		@Deprecated
-
-		public int getDisplayWidthPixels() {
-
-				return getResources().getDisplayMetrics().widthPixels;
-
-		}
-
-		
-
-		@Deprecated
-
-		public int getDisplayHeightPixels() {
-
-				return getResources().getDisplayMetrics().heightPixels;
-
-		}
-
-}
+						
